@@ -1,5 +1,7 @@
+import { fakerPT_PT as faker } from '@faker-js/faker';
+
 export const products = [
-  { id: 1, name: 'Product 1', price: 10 },
-  { id: 2, name: 'Product 2', price: 20 },
-  { id: 3, name: 'Product 3', price: 30 },
+  { id: 1, name: faker.commerce.productName(), price: faker.commerce.price({min: 20, max: 800 }) },
+  { id: 2, name: faker.commerce.productName(), price: faker.commerce.price({min: 20, max: 800 }) },
+  { id: 3, name: faker.commerce.productName(), price: faker.commerce.price({min: 20, max: 800 }) },
 ];
