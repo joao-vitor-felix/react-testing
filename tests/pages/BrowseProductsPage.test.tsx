@@ -8,7 +8,7 @@ import BrowseProducts from "../../src/pages/BrowseProductsPage";
 import userEvent from "@testing-library/user-event";
 import { Category, Product } from "../../src/entities";
 import { CartProvider } from "../../src/providers/CartProvider";
-import { db } from "../mocks/db";
+import { db, getProductsByCategory } from "../mocks/db";
 import { simulateDelay, simulateError } from "../utils";
 
 describe("BrowseProductsPage", () => {
@@ -17,8 +17,11 @@ describe("BrowseProductsPage", () => {
 
   beforeAll(() => {
     [1, 2].forEach((item) => {
-      categories.push(db.category.create({ name: `Category ${item}` }));
-      products.push(db.product.create());
+      const category = db.category.create({ name: `Category ${item}` });
+      categories.push(category);
+      [1, 2].forEach(() => {
+        products.push(db.product.create({ categoryId: category.id }));
+      });
     });
   });
   afterAll(() => {
@@ -41,14 +44,42 @@ describe("BrowseProductsPage", () => {
       </CartProvider>
     );
 
+    const getCategoriesSkeleton = () =>
+      screen.queryByRole("progressbar", {
+        name: /categories/i,
+      });
+
+    const getProductsSkeleton = () =>
+      screen.queryByRole("progressbar", { name: /products/i });
+
+    const getCategoriesComboBox = () => screen.queryByRole("combobox");
+
+    const selectCategory = async (name: RegExp | string) => {
+      await waitForElementToBeRemoved(getCategoriesSkeleton);
+      const combobox = getCategoriesComboBox();
+      const user = userEvent.setup();
+      await user.click(combobox!);
+
+      const option = screen.getByRole("option", { name });
+      await user.click(option);
+    };
+
+    const expectProductsToBeInTheDocument = (products: Product[]) => {
+      const rows = screen.getAllByRole("row");
+      const dataRows = rows.slice(1);
+      expect(dataRows).toHaveLength(products.length);
+
+      products.forEach((product) => {
+        expect(screen.getByText(product.name)).toBeInTheDocument();
+      });
+    };
+
     return {
-      getProductsSkeleton: () =>
-        screen.queryByRole("progressbar", { name: /products/i }),
-      getCategoriesSkeleton: () =>
-        screen.queryByRole("progressbar", {
-          name: /categories/i,
-        }),
-      getCategoriesComboBox: () => screen.queryByRole("combobox"),
+      getProductsSkeleton,
+      getCategoriesSkeleton,
+      getCategoriesComboBox,
+      selectCategory,
+      expectProductsToBeInTheDocument,
     };
   };
 
@@ -108,5 +139,26 @@ describe("BrowseProductsPage", () => {
     products.forEach((product) => {
       expect(screen.getByText(product.name)).toBeInTheDocument();
     });
+  });
+
+  it("should filter products by category", async () => {
+    const { selectCategory, expectProductsToBeInTheDocument } =
+      renderComponent();
+
+    const selectedCategory = categories[0];
+    await selectCategory(selectedCategory.name);
+
+    const products = getProductsByCategory(selectedCategory.id);
+    expectProductsToBeInTheDocument(products);
+  });
+
+  it("should render all products if All category is selected", async () => {
+    const { selectCategory, expectProductsToBeInTheDocument } =
+      renderComponent();
+
+    await selectCategory(/all/i);
+
+    const products = db.product.getAll();
+    expectProductsToBeInTheDocument(products);
   });
 });
