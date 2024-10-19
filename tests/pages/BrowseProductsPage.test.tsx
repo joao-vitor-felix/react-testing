@@ -6,8 +6,8 @@ import {
 import userEvent from "@testing-library/user-event";
 import { Category, Product } from "../../src/entities";
 import BrowseProducts from "../../src/pages/BrowseProductsPage";
-import Providers from "../../src/providers";
 import { db, getProductsByCategory } from "../mocks/db";
+import { Providers } from "../Providers";
 import { simulateDelay, simulateError } from "../utils";
 
 describe("BrowseProductsPage", () => {
