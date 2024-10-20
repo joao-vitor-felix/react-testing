@@ -36,23 +36,43 @@ describe("ProductForm", () => {
       wrapper: Providers,
     });
 
-    return {
-      waitFormToAppear: async () => {
-        await screen.findByRole("form");
+    const waitFormToAppear = async () => {
+      await screen.findByRole("form");
+      return {
+        name: screen.getByPlaceholderText(/name/i),
+        price: screen.getByPlaceholderText(/price/i),
+        category: screen.getByRole("combobox", { name: /category/i }),
+        submitButton: screen.getByRole("button", { name: /submit/i }),
+      };
+    };
 
-        return {
-          name: screen.getByPlaceholderText(/name/i),
-          price: screen.getByPlaceholderText(/price/i),
-          category: screen.getByRole("combobox", { name: /category/i }),
-          submitButton: screen.getByRole("button", { name: /submit/i }),
-        };
-      },
+    const fillFormIn = async (name?: string, price?: string) => {
+      const form = await waitFormToAppear();
+
+      if (name !== undefined) await userEvent.type(form.name, name);
+      if (price !== undefined) await userEvent.type(form.price, price);
+
+      await userEvent.click(form.category);
+      const options = screen.getAllByRole("option");
+      await userEvent.click(options[0]);
+      await userEvent.click(form.submitButton);
+    };
+
+    const expectErrorToBeInTheDocument = (errorMessage: RegExp) => {
+      const error = screen.getByRole("alert");
+      expect(error).toBeInTheDocument();
+      expect(error).toHaveTextContent(errorMessage);
+    };
+
+    return {
+      waitFormToAppear,
+      fillFormIn,
+      expectErrorToBeInTheDocument,
     };
   };
 
   it("should render form fields", async () => {
     const { waitFormToAppear } = renderComponent();
-
     const inputs = await waitFormToAppear();
 
     expect(inputs.name).toBeInTheDocument();
@@ -76,9 +96,7 @@ describe("ProductForm", () => {
 
   it("should render name input with focus", async () => {
     const { waitFormToAppear } = renderComponent();
-
     const { name } = await waitFormToAppear();
-
     expect(name).toHaveFocus();
   });
 
@@ -100,19 +118,10 @@ describe("ProductForm", () => {
   ])(
     "should show an error message when $scenario",
     async ({ errorMessage, price }) => {
-      const { waitFormToAppear } = renderComponent();
+      const { fillFormIn, expectErrorToBeInTheDocument } = renderComponent();
 
-      const form = await waitFormToAppear();
-      if (price !== undefined) await userEvent.type(form.price, price);
-
-      await userEvent.type(form.name, "name");
-      await userEvent.click(form.category);
-      const options = screen.getAllByRole("option");
-      await userEvent.click(options[0]);
-      await userEvent.click(form.submitButton);
-      const error = screen.getByRole("alert");
-      expect(error).toBeInTheDocument();
-      expect(error).toHaveTextContent(errorMessage);
+      await fillFormIn("name", price);
+      expectErrorToBeInTheDocument(errorMessage);
     }
   );
 });
