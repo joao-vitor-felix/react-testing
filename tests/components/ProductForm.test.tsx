@@ -3,6 +3,7 @@ import ProductForm from "../../src/components/ProductForm";
 import { Category, Product } from "../../src/entities";
 import { Providers } from "../Providers";
 import { db } from "../mocks/db";
+import userEvent from "@testing-library/user-event";
 
 describe("ProductForm", () => {
   let category: Category;
@@ -43,6 +44,7 @@ describe("ProductForm", () => {
           name: screen.getByPlaceholderText(/name/i),
           price: screen.getByPlaceholderText(/price/i),
           category: screen.getByRole("combobox", { name: /category/i }),
+          submitButton: screen.getByRole("button", { name: /submit/i }),
         };
       },
     };
@@ -79,4 +81,38 @@ describe("ProductForm", () => {
 
     expect(name).toHaveFocus();
   });
+
+  it.each([
+    {
+      scenario: "price is not provided",
+      errorMessage: /required/i,
+    },
+    {
+      scenario: "0 is provided as price",
+      errorMessage: /greater than/,
+      price: "0",
+    },
+    {
+      scenario: "price higher than 1000",
+      errorMessage: /less than/i,
+      price: "1001",
+    },
+  ])(
+    "should show an error message when $scenario",
+    async ({ errorMessage, price }) => {
+      const { waitFormToAppear } = renderComponent();
+
+      const form = await waitFormToAppear();
+      if (price !== undefined) await userEvent.type(form.price, price);
+
+      await userEvent.type(form.name, "name");
+      await userEvent.click(form.category);
+      const options = screen.getAllByRole("option");
+      await userEvent.click(options[0]);
+      await userEvent.click(form.submitButton);
+      const error = screen.getByRole("alert");
+      expect(error).toBeInTheDocument();
+      expect(error).toHaveTextContent(errorMessage);
+    }
+  );
 });
