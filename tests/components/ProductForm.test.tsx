@@ -36,20 +36,22 @@ describe("ProductForm", () => {
     });
 
     return {
-      waitFormToAppear: () => screen.findByRole("form"),
-      getInputs: () => ({
-        name: screen.getByPlaceholderText(/name/i),
-        price: screen.getByPlaceholderText(/price/i),
-        category: screen.getByRole("combobox", { name: /category/i }),
-      }),
+      waitFormToAppear: async () => {
+        await screen.findByRole("form");
+
+        return {
+          name: screen.getByPlaceholderText(/name/i),
+          price: screen.getByPlaceholderText(/price/i),
+          category: screen.getByRole("combobox", { name: /category/i }),
+        };
+      },
     };
   };
 
   it("should render form fields", async () => {
-    const { waitFormToAppear, getInputs } = renderComponent();
+    const { waitFormToAppear } = renderComponent();
 
-    await waitFormToAppear();
-    const inputs = getInputs();
+    const inputs = await waitFormToAppear();
 
     expect(inputs.name).toBeInTheDocument();
     expect(inputs.price).toBeInTheDocument();
@@ -57,10 +59,9 @@ describe("ProductForm", () => {
   });
 
   it("should render with initial values", async () => {
-    const { waitFormToAppear, getInputs } = renderComponent(product);
+    const { waitFormToAppear } = renderComponent(product);
 
-    await waitFormToAppear();
-    const inputs = getInputs();
+    const inputs = await waitFormToAppear();
 
     expect(inputs.name).toHaveDisplayValue(new RegExp(product.name, "i"));
     expect(inputs.name).toHaveValue(product.name);
@@ -69,5 +70,13 @@ describe("ProductForm", () => {
     );
     expect(inputs.price).toHaveValue(product.price.toString());
     expect(inputs.category).toHaveTextContent(new RegExp(category.name, "i"));
+  });
+
+  it("should render name input with focus", async () => {
+    const { waitFormToAppear } = renderComponent();
+
+    const { name } = await waitFormToAppear();
+
+    expect(name).toHaveFocus();
   });
 });
