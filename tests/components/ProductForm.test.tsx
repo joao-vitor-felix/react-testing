@@ -186,4 +186,11 @@ describe("ProductForm", () => {
 
     expect(form.submitButton).not.toBeDisabled();
   });
+
+  it("should show error message when name is not provided", async () => {
+    const { fillFormIn, expectErrorToBeInTheDocument } = renderComponent();
+    const form = await fillFormIn(" ", product.price.toString());
+    await userEvent.click(form.submitButton);
+    expectErrorToBeInTheDocument(/required/i);
+  });
 });
