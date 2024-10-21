@@ -4,6 +4,7 @@ import { Category, Product } from "../../src/entities";
 import { Providers } from "../Providers";
 import { db } from "../mocks/db";
 import userEvent from "@testing-library/user-event";
+import { Toaster } from "react-hot-toast";
 
 describe("ProductForm", () => {
   let category: Category;
@@ -32,9 +33,16 @@ describe("ProductForm", () => {
   });
 
   const renderComponent = (product?: Product) => {
-    render(<ProductForm onSubmit={vi.fn()} product={product} />, {
-      wrapper: Providers,
-    });
+    const onSubmit = vi.fn();
+    render(
+      <>
+        <ProductForm onSubmit={onSubmit} product={product} />
+        <Toaster />
+      </>,
+      {
+        wrapper: Providers,
+      }
+    );
 
     const waitFormToAppear = async () => {
       await screen.findByRole("form");
@@ -52,10 +60,13 @@ describe("ProductForm", () => {
       if (name !== undefined) await userEvent.type(form.name, name);
       if (price !== undefined) await userEvent.type(form.price, price);
 
+      await userEvent.tab();
       await userEvent.click(form.category);
       const options = screen.getAllByRole("option");
       await userEvent.click(options[0]);
       await userEvent.click(form.submitButton);
+
+      return form;
     };
 
     const expectErrorToBeInTheDocument = (errorMessage: RegExp) => {
@@ -68,6 +79,7 @@ describe("ProductForm", () => {
       waitFormToAppear,
       fillFormIn,
       expectErrorToBeInTheDocument,
+      onSubmit,
     };
   };
 
@@ -124,4 +136,54 @@ describe("ProductForm", () => {
       expectErrorToBeInTheDocument(errorMessage);
     }
   );
+
+  it("should call onSubmit with form values when submit button is clicked", async () => {
+    const { fillFormIn, onSubmit } = renderComponent();
+
+    await fillFormIn(product.name, product.price.toString());
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    expect(onSubmit).toHaveBeenCalledWith({
+      name: product.name,
+      price: product.price,
+      categoryId: category.id,
+    });
+    expect(onSubmit).toHaveBeenCalledOnce();
+  });
+
+  it("should show error toast when form submission fails", async () => {
+    const { fillFormIn, onSubmit } = renderComponent();
+    onSubmit.mockRejectedValue({});
+    await fillFormIn(product.name, product.price.toString());
+
+    const toast = await screen.findByRole("status");
+    expect(toast).toBeInTheDocument();
+    expect(toast).toHaveTextContent(/error/i);
+  });
+
+  it("should disable submit button when submitting", async () => {
+    const { fillFormIn, onSubmit } = renderComponent();
+    onSubmit.mockReturnValue(new Promise(() => {}));
+    const form = await fillFormIn(product.name, product.price.toString());
+
+    await userEvent.click(form.submitButton);
+    expect(form.submitButton).toBeDisabled();
+  });
+
+  it("should re-enable the submit button after submission", async () => {
+    const { fillFormIn, onSubmit } = renderComponent();
+    onSubmit.mockResolvedValue({});
+    const form = await fillFormIn(product.name, product.price.toString());
+    await userEvent.click(form.submitButton);
+
+    expect(form.submitButton).not.toBeDisabled();
+  });
+
+  it("should re-enable the submit button after submission", async () => {
+    const { fillFormIn, onSubmit } = renderComponent();
+    onSubmit.mockRejectedValue("error");
+    const form = await fillFormIn(product.name, product.price.toString());
+    await userEvent.click(form.submitButton);
+
+    expect(form.submitButton).not.toBeDisabled();
+  });
 });
