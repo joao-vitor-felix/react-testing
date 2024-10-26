@@ -21,7 +21,7 @@ describe("QuantitySelector", () => {
 
     const getAddToCartButton = () =>
       screen.queryByRole("button", {
-        name: /add to cart/i,
+        name: new RegExp(`Add ${product.name} to cart`, "i"),
       });
 
     const getQuantityControls = () => ({

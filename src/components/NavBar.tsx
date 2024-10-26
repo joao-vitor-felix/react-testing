@@ -43,7 +43,9 @@ const NavBar = () => {
       <Flex gap="2" align="center">
         <Flex align="center" gap="1">
           <AiOutlineShoppingCart />
-          <Badge role="status">{getItemCount()}</Badge>
+          <Badge role="status" aria-label="Cart items quantity">
+            {getItemCount()}
+          </Badge>
         </Flex>
         <LanguageSelector />
         <AuthStatus />

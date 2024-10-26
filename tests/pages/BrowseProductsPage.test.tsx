@@ -4,6 +4,8 @@ import {
   waitForElementToBeRemoved,
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { BrowserRouter } from "react-router-dom";
+import NavBar from "../../src/components/NavBar";
 import { Category, Product } from "../../src/entities";
 import BrowseProducts from "../../src/pages/BrowseProductsPage";
 import { db, getProductsByCategory } from "../mocks/db";
@@ -171,5 +173,29 @@ describe("BrowseProductsPage", () => {
 
     const products = db.product.getAll();
     expectProductsToBeInTheDocument(products);
+  });
+
+  it("should update cart count when add to cart button is clicked", async () => {
+    render(
+      <BrowserRouter>
+        <NavBar />
+        <BrowseProducts />
+      </BrowserRouter>,
+      { wrapper: Providers }
+    );
+
+    await waitForElementToBeRemoved(() =>
+      screen.getByRole("progressbar", { name: /products/i })
+    );
+    const products = db.product.getAll();
+    const product = products[0];
+
+    const addToCartButton = screen.getByRole("button", {
+      name: new RegExp(`add ${product.name} to cart`, "i"),
+    });
+    await userEvent.click(addToCartButton);
+
+    const cartStatus = screen.getByRole("status", { name: /quantity/i });
+    expect(cartStatus).toHaveTextContent("1");
   });
 });

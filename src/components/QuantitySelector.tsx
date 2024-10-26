@@ -7,7 +7,14 @@ const QuantitySelector = ({ product }: { product: Product }) => {
 
   const cartItem = getItem(product);
   if (!cartItem)
-    return <Button onClick={() => addToCart(product)}>Add to Cart</Button>;
+    return (
+      <Button
+        onClick={() => addToCart(product)}
+        aria-label={`Add ${product.name} to cart`}
+      >
+        Add to Cart
+      </Button>
+    );
 
   return (
     <Flex gap="3" align="center" role="spinbutton">
