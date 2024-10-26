@@ -15,7 +15,7 @@ describe("ProductDetailPage", () => {
   });
 
   it("should render product details", async () => {
-    navigateTo("/products/" + product.id);
+    navigateTo(`/products/${product.id}`);
 
     await waitForElementToBeRemoved(() => screen.queryByText(/loading/i));
 
@@ -24,5 +24,13 @@ describe("ProductDetailPage", () => {
     ).toBeInTheDocument();
 
     expect(screen.getByText("$" + product.price)).toBeInTheDocument();
+  });
+
+  it("should render error message if product id is not a number", async () => {
+    navigateTo("/products/!@#");
+
+    await waitForElementToBeRemoved(() => screen.queryByText(/loading/i));
+
+    expect(screen.getByText(/not found/i)).toBeInTheDocument();
   });
 });
